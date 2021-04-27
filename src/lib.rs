@@ -6,7 +6,7 @@
 //!
 //! `ConfTest::run()` called from 'build.rs' parses 'Cargo.toml'. Then for each *[feature]*
 //! defined, it checks if that feature was not set manually (with `--features`) and a test in
-//! 'conf_tests/' exists. This test is then compiled and build. When that succeedes the
+//! 'conf_tests/' exists. This test is then compiled and build. When that succeeds the
 //! feature becomes enabled automatically.
 //!
 //!
@@ -27,6 +27,8 @@
 //! is the place where *ConfTest* is hooked in at first:
 //!
 //! ```rust
+//! use conf_test::ConfTest;
+//!
 //! fn main() {
 //!     ConfTest::run();
 //!     // any other build.rs steps follow below
@@ -105,9 +107,8 @@
 //! * Only use ConfTest when other things (like factoring out OS specific thing into their own
 //!   crates) are not applicable.
 //!
-//! * Provide a baseline implementation which is portable with no
-//!   features enabled. This may not perform as well or lack some special features but should
-//!   compiled nevertheless.
+//! * Provide a baseline implementation which is portable with no features enabled. This may
+//!   not perform as well or lack some special features but should compile nevertheless.
 //!
 
 use std::ffi::{OsStr, OsString};

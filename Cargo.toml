@@ -6,7 +6,7 @@ edition = "2018"
 description = "Run configuration tests from build.rs and set available features"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/cehteh/conf_test.git"
-keywords = ["configuration", "cargo", "buildrs"]
+keywords = ["configuration", "cargo", "buildscript"]
 
 [dependencies]
 cargo_metadata = "0.13"
