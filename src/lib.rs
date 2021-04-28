@@ -269,7 +269,7 @@ impl ConfTest {
         target_dir.push("conf_test");
 
         // let cargo start a rustc process that does not build the project but returns the metadata about compilation artifacts
-        let mut cargo = Command::new("cargo")
+        let mut cargo = Command::new(env("CARGO").unwrap_or_else(|| OsString::from("cargo")))
             .arg("rustc")
             .arg("--message-format")
             .arg("json")
