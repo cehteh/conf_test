@@ -17,7 +17,7 @@
 //! differences make it hard to write portable software that still offer optimal performance
 //! for diffent Operatiing Systems. Moreover often a developer doesn't even know what
 //! featureset other Operating Systems may provide or this may be changed by kernel or
-//! userland version or configuration. Probing the presence of such features at compiletime
+//! userland version or configuration. Probing the presence of such features at build time
 //! can solve these problems.
 //!
 //!
@@ -123,7 +123,6 @@ use cargo_metadata::{Message, MetadataCommand};
 use std::process::{Command, Stdio};
 
 use std::collections::{BTreeMap, BTreeSet};
-
 
 // Empty Type for now, In future this may be extended without breaking existing code.
 /// Implements the conf_test API
@@ -268,7 +267,8 @@ impl ConfTest {
         target_dir.push(env("OUT_DIR").expect("env var OUT_DIR is not set"));
         target_dir.push("conf_test");
 
-        // let cargo start a rustc process that does not build the project but returns the metadata about compilation artifacts
+        // let cargo start a rustc process that does not build the project but returns the
+        // metadata about compilation artifacts
         let mut cargo = Command::new(env("CARGO").unwrap_or_else(|| OsString::from("cargo")))
             .arg("rustc")
             .arg("--message-format")
@@ -290,8 +290,7 @@ impl ConfTest {
                 if dependencies.contains(&artifact.target.name) {
                     for filename in artifact.filenames {
                         let filename = PathBuf::from(filename);
-                        let id =
-                            OsString::from(filename.file_stem().expect("invalid file name"));
+                        let id = OsString::from(filename.file_stem().expect("invalid file name"));
                         let extension = filename.extension();
                         let name = String::from(&artifact.target.name);
 
@@ -306,9 +305,9 @@ impl ConfTest {
                                         .extension()
                                         .and_then(OsStr::to_str)
                                         .unwrap();
-                                        if stored_extension == "rlib" {
-                                            continue;
-                                        }
+                                    if stored_extension == "rlib" {
+                                        continue;
+                                    }
                                     extern_libs.insert(id, (name, filename));
                                 }
                             }
@@ -319,8 +318,7 @@ impl ConfTest {
                                         .extension()
                                         .and_then(OsStr::to_str)
                                         .unwrap();
-                                    if stored_extension == "rmeta" || stored_extension == "rlib"
-                                    {
+                                    if stored_extension == "rmeta" || stored_extension == "rlib" {
                                         continue;
                                     }
                                     extern_libs.insert(id, (name, filename));
