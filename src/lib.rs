@@ -217,8 +217,12 @@ impl ConfTest {
     }
 
     fn run_test(test_binary: &Path) -> Option<String> {
-        let stdout = Command::new(test_binary).output().ok()?.stdout;
-        Some(String::from_utf8_lossy(&stdout).to_string())
+        let command = Command::new(test_binary).output().ok()?;
+        if command.status.success() {
+            Some(String::from_utf8_lossy(&command.stdout).to_string())
+        } else {
+            None
+        }
     }
 
     fn compile_test(
