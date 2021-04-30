@@ -72,6 +72,17 @@
 //! Later in the crate implementation source code one uses conditional compilation as usual
 //! with `#[cfg(feature = "o_path")]`.
 //!
+//! ## Test depending on Features
+//!
+//! Tests may depend on features that are discovered by other tests or set manually. For
+//! simplicity there is no dependency resolver about this but tests are run in sort order of
+//! the feature name. Every subsequent test is compiled with the the feature flags already
+//! discovered so far. To leverage this functionality one rarely needs to change the feature
+//! names. For example when 'bar' depends on 'foo' it is required to enforce the sort order by
+//! renaming these features to 'aa_foo' and 'bb_bar'. Only features that get discovered are
+//! used for the test compilations features set by printing cargo instructions from the test
+//! scripts are not used.
+//!
 //!
 //! # Extra Features
 //!
@@ -171,6 +182,7 @@ impl ConfTest {
 
         let extern_libs = Self::get_extern_libs(&dependencies);
 
+        let mut test_features = Vec::new();
         let mut outputs = Vec::new();
         for feature in features {
             if env(format!("CARGO_FEATURE_{}", feature.to_uppercase())).is_none() {
@@ -181,13 +193,16 @@ impl ConfTest {
                 if test_src.exists() {
                     outputs.push(format!("# {} exists\n", test_src.display()));
                     outputs.push(format!("cargo:rerun-if-changed={}\n", test_src.display()));
-                    if let Some(binary) = Self::compile_test(&test_src, &edition, &extern_libs) {
+                    if let Some(binary) =
+                        Self::compile_test(&test_src, &edition, &extern_libs, &test_features)
+                    {
                         outputs.push(format!("# compiling ConfTest for {} success\n", &feature));
                         if let Some(stdout) = Self::run_test(&binary) {
                             outputs
                                 .push(format!("# executing ConfTest for {} success\n", &feature));
                             outputs.push(format!("cargo:rustc-cfg=feature=\"{}\"\n", &feature));
                             outputs.push(stdout);
+                            test_features.push(feature.clone());
                         } else {
                             outputs.push(format!("# executing ConfTest for {} failed\n", &feature));
                         }
@@ -201,6 +216,7 @@ impl ConfTest {
                 outputs.push(format!("# test for '{}' manually overridden\n", &feature));
             }
             outputs.push(String::from("\n"));
+            test_features.push(feature.clone());
         }
 
         let mut logfile = PathBuf::new();
@@ -229,6 +245,7 @@ impl ConfTest {
         src: &Path,
         edition: &str,
         extern_libs: &BTreeMap<OsString, (String, PathBuf)>,
+        features: &[String],
     ) -> Option<PathBuf> {
         let mut out_file = PathBuf::new();
         out_file.push(env("OUT_DIR").expect("env var OUT_DIR is not set"));
@@ -252,6 +269,12 @@ impl ConfTest {
                 name,
                 filename.to_str().expect("invalid file name")
             ));
+        }
+
+        for feature in features {
+            rust_cmd
+                .arg("--cfg")
+                .arg(format!("feature=\"{}\"", feature));
         }
 
         let rust_output = rust_cmd.output().ok()?;
