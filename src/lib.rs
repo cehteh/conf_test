@@ -26,7 +26,7 @@
 //! When present 'cargo' (builds and) executes a *build.rs* script while building crate. This
 //! is the place where *ConfTest* is hooked in at first:
 //!
-//! ```rust
+//! ```rust,ignore
 //! use conf_test::ConfTest;
 //!
 //! fn main() {
@@ -56,7 +56,7 @@
 //! files named after the features to be probed. Containing a single `fn main()` which shall
 //! probe one single thing.
 //!
-//! ```rust
+//! ```rust,ignore
 //! // This goes into conf_tests/o_path.rs
 //! extern crate libc;
 //!
