@@ -130,7 +130,7 @@ use std::env::var_os as env;
 use std::path::{Path, PathBuf};
 use std::str;
 
-use cargo_metadata::{Message, MetadataCommand};
+use cargo_metadata::{Message, MetadataCommand, Edition};
 use std::process::{Command, Stdio};
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -165,7 +165,7 @@ impl ConfTest {
 
         let mut features = BTreeSet::new();
         let mut dependencies = BTreeSet::new();
-        let mut edition: Option<String> = None;
+        let mut edition: Option<Edition> = None;
         for package in metadata.packages {
             if edition == None {
                 // just pick the first edition seen
@@ -178,7 +178,7 @@ impl ConfTest {
                 dependencies.insert(dep.name);
             }
         }
-        let edition = edition.unwrap_or_else(|| String::from("2018"));
+        let edition = edition.unwrap_or_else(|| Edition::E2021);
 
         let extern_libs = Self::get_extern_libs(&dependencies);
 
@@ -243,7 +243,7 @@ impl ConfTest {
 
     fn compile_test(
         src: &Path,
-        edition: &str,
+        edition: &Edition,
         extern_libs: &BTreeMap<OsString, (String, PathBuf)>,
         features: &[String],
     ) -> Option<PathBuf> {
@@ -257,7 +257,7 @@ impl ConfTest {
             .arg("--crate-type")
             .arg("bin")
             .arg("--edition")
-            .arg(edition)
+            .arg(edition_to_str(edition))
             .arg("-o")
             .arg(&out_file)
             .arg("-v")
@@ -365,3 +365,13 @@ impl ConfTest {
         extern_libs
     }
 }
+
+fn edition_to_str(edition: &Edition) -> &str {
+    match edition {
+        Edition::E2015 => "2015",
+        Edition::E2018 => "2018",
+        Edition::E2021 => "2021",
+        _ => todo!("send PR for new editions")
+    }
+}
+

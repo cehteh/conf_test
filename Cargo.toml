@@ -1,15 +1,15 @@
 [package]
 name = "conf_test"
-version = "0.2.1"
+version = "0.3.0"
 authors = ["Christian Thäter <ct@pipapo.org>"]
-edition = "2018"
+edition = "2021"
 description = "Run configuration tests from build.rs and set available features"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/cehteh/conf_test.git"
 keywords = ["configuration", "cargo", "buildscript"]
 
 [dependencies]
-cargo_metadata = ">=0.13, <=0.15"
+cargo_metadata = "0.15"
 
 [badges]
 maintenance = { status = "actively-developed" }
