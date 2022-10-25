@@ -9,7 +9,7 @@ repository = "https://github.com/cehteh/conf_test.git"
 keywords = ["configuration", "cargo", "buildscript"]
 
 [dependencies]
-cargo_metadata = ">=0.13, <=0.15"
+cargo_metadata = ">=0.13, <=0.16"
 
 [badges]
 maintenance = { status = "actively-developed" }
