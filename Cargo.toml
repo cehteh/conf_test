@@ -1,6 +1,6 @@
 [package]
 name = "conf_test"
-version = "0.3.0"
+version = "0.3.1"
 authors = ["Christian Thäter <ct@pipapo.org>"]
 edition = "2021"
 description = "Run configuration tests from build.rs and set available features"
@@ -9,7 +9,7 @@ repository = "https://github.com/cehteh/conf_test.git"
 keywords = ["configuration", "cargo", "buildscript"]
 
 [dependencies]
-cargo_metadata = "0.15"
+cargo_metadata = ">=0.13, <=0.16"
 
 [badges]
 maintenance = { status = "actively-developed" }
