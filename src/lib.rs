@@ -18,25 +18,28 @@
 //!
 //! # Rationale
 //!
-//! Operating Systems have sometimes subtle differences in features and standards
-//! conformance. Sometimes non-standard features are added for improved performance. These
-//! differences make it hard to write portable software that still offer optimal performance
-//! for diffent Operatiing Systems. Moreover often a developer doesn't even know what
-//! featureset other Operating Systems may provide or this may be changed by kernel or
-//! userland version or configuration. Probing the presence of such features at build time
-//! can solve these problems.
+//! Compiler versions and Operating Systems have sometimes subtle differences in features and
+//! standards conformance. Sometimes non-standard features are added for improved
+//! performance. These differences make it hard to write portable software that still offer
+//! optimal performance for different Operating Systems. Moreover often a developer doesn't
+//! even know what featureset other Operating Systems may provide or this may be changed by
+//! kernel or userland version or configuration. Probing the presence of such features at
+//! build time can solve these problems.
+//!
+//! Further it becomes possible to test for rust stdlib functionality such as if nightly
+//! features are available or became stabilized.
 //!
 //!
 //! # How To
+//!
+//! ## Checking OS features
 //!
 //! When present 'cargo' (builds and) executes a *build.rs* script while building crate. This
 //! is the place where *ConfTest* is hooked in at first:
 //!
 //! ```rust,ignore
-//! use conf_test::ConfTest;
-//!
 //! fn main() {
-//!     ConfTest::run();
+//!     conf_test::ConfTest::run();
 //!     // any other build.rs steps follow below
 //! }
 //! ```
@@ -51,7 +54,7 @@
 //!
 //! [build-dependencies]
 //! libc = "0.2.34"
-//! conf_test = "0.1"
+//! conf_test = "0.4"
 //!
 //! [features]
 //! default = []
@@ -78,7 +81,7 @@
 //! Later in the crate implementation source code one uses conditional compilation as usual
 //! with `#[cfg(feature = "o_path")]`.
 //!
-//! ## Test depending on Features
+//! ## Test depending on other Features
 //!
 //! Tests may depend on features that are discovered by other tests or set manually. For
 //! simplicity there is no dependency resolver about this but tests are run in sort order of
@@ -90,7 +93,7 @@
 //! scripts are not used.
 //!
 //!
-//! # Extra Features
+//! # Detailed Control
 //!
 //! Tests can emit special instructions to cargo on stdout.
 //! These become only effective when the test exits successful.
@@ -208,6 +211,7 @@ impl ConfTest {
         let mut outputs = Vec::new();
 
         if env("DOCS_RS").is_some() {
+            outputs.push("# running on DOCS.RS\n".to_string());
             if features.contains("docs_rs") {
                 outputs.push("cargo:rustc-cfg=feature=\"docs_rs\"\n".to_string());
             }
