@@ -9,6 +9,12 @@
 //! 'conf_tests/' exists. This test is then compiled and build. When that succeeds the
 //! feature becomes enabled automatically.
 //!
+//! ## Special case for 'docs.rs'
+//!
+//! When a packages is build for documentation on 'docs.rs' then conf_test detects and checks
+//! if a `docs_rs = []` features is available in 'Cargo.toml', if so, then this becomes
+//! enabled. When not, then nothing is probed.
+//!
 //!
 //! # Rationale
 //!
@@ -123,7 +129,7 @@
 //!
 
 use std::ffi::{OsStr, OsString};
-use std::fs::{File,DirBuilder};
+use std::fs::{DirBuilder, File};
 
 use std::io::prelude::*;
 
@@ -131,7 +137,7 @@ use std::env::var_os as env;
 use std::path::{Path, PathBuf};
 use std::str;
 
-use cargo_metadata::{Message, MetadataCommand, Edition};
+use cargo_metadata::{Edition, Message, MetadataCommand};
 use std::process::{Command, Stdio};
 
 use std::collections::{BTreeMap, BTreeSet};
@@ -159,13 +165,19 @@ impl ConfTest {
             }
         }
 
-        println!("# OUT_DIR is '{:?}'", env("OUT_DIR").expect("env var OUT_DIR is not set"));
+        println!(
+            "# OUT_DIR is '{:?}'",
+            env("OUT_DIR").expect("env var OUT_DIR is not set")
+        );
 
         // make our output dir
         let mut out_dir = PathBuf::new();
         out_dir.push(env("OUT_DIR").expect("env var OUT_DIR is not set"));
         out_dir.push("conf_test");
-        DirBuilder::new().recursive(true).create(out_dir).expect("Failed to create output directory");
+        DirBuilder::new()
+            .recursive(true)
+            .create(out_dir)
+            .expect("Failed to create output directory");
 
         let metadata = MetadataCommand::new()
             .other_options(["--frozen".to_string()])
@@ -194,39 +206,52 @@ impl ConfTest {
 
         let mut test_features = Vec::new();
         let mut outputs = Vec::new();
-        for feature in features {
-            if env(format!("CARGO_FEATURE_{}", feature.to_uppercase())).is_none() {
-                outputs.push(format!("# checking for {}\n", &feature));
-                let mut test_src = PathBuf::from("conf_tests");
-                test_src.push(&feature);
-                test_src.set_extension("rs");
-                if test_src.exists() {
-                    outputs.push(format!("# {} exists\n", test_src.display()));
-                    outputs.push(format!("cargo:rerun-if-changed={}\n", test_src.display()));
-                    if let Some(binary) =
-                        Self::compile_test(&test_src, &edition, &extern_libs, &test_features)
-                    {
-                        outputs.push(format!("# compiling ConfTest for {} success\n", &feature));
-                        if let Some(stdout) = Self::run_test(&binary) {
+
+        if env("DOCS_RS").is_some() {
+            if features.contains("docs_rs") {
+                outputs.push("cargo:rustc-cfg=feature=\"docs_rs\"\n".to_string());
+            }
+        } else {
+            for feature in features {
+                if env(format!("CARGO_FEATURE_{}", feature.to_uppercase())).is_none() {
+                    outputs.push(format!("# checking for {}\n", &feature));
+                    let mut test_src = PathBuf::from("conf_tests");
+                    test_src.push(&feature);
+                    test_src.set_extension("rs");
+                    if test_src.exists() {
+                        outputs.push(format!("# {} exists\n", test_src.display()));
+                        outputs.push(format!("cargo:rerun-if-changed={}\n", test_src.display()));
+                        if let Some(binary) =
+                            Self::compile_test(&test_src, &edition, &extern_libs, &test_features)
+                        {
                             outputs
-                                .push(format!("# executing ConfTest for {} success\n", &feature));
-                            outputs.push(format!("cargo:rustc-cfg=feature=\"{}\"\n", &feature));
-                            outputs.push(stdout);
-                            test_features.push(feature.clone());
+                                .push(format!("# compiling ConfTest for {} success\n", &feature));
+                            if let Some(stdout) = Self::run_test(&binary) {
+                                outputs.push(format!(
+                                    "# executing ConfTest for {} success\n",
+                                    &feature
+                                ));
+                                outputs.push(format!("cargo:rustc-cfg=feature=\"{}\"\n", &feature));
+                                outputs.push(stdout);
+                                test_features.push(feature.clone());
+                            } else {
+                                outputs.push(format!(
+                                    "# executing ConfTest for {} failed\n",
+                                    &feature
+                                ));
+                            }
                         } else {
-                            outputs.push(format!("# executing ConfTest for {} failed\n", &feature));
+                            outputs.push(format!("# compiling ConfTest for {} failed\n", &feature));
                         }
                     } else {
-                        outputs.push(format!("# compiling ConfTest for {} failed\n", &feature));
+                        outputs.push(format!("# test for '{}' does not exist\n", &feature));
                     }
                 } else {
-                    outputs.push(format!("# test for '{}' does not exist\n", &feature));
+                    outputs.push(format!("# test for '{}' manually overridden\n", &feature));
                 }
-            } else {
-                outputs.push(format!("# test for '{}' manually overridden\n", &feature));
+                outputs.push(String::from("\n"));
+                test_features.push(feature.clone());
             }
-            outputs.push(String::from("\n"));
-            test_features.push(feature.clone());
         }
 
         let mut logfile = PathBuf::new();
@@ -382,7 +407,6 @@ fn edition_to_str(edition: &Edition) -> &str {
         Edition::E2015 => "2015",
         Edition::E2018 => "2018",
         Edition::E2021 => "2021",
-        _ => todo!("send PR for new editions")
+        _ => todo!("send PR for new editions"),
     }
 }
-
