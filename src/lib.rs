@@ -123,7 +123,8 @@
 //!
 
 use std::ffi::{OsStr, OsString};
-use std::fs::File;
+use std::fs::{File,DirBuilder};
+
 use std::io::prelude::*;
 
 use std::env::var_os as env;
@@ -158,7 +159,16 @@ impl ConfTest {
             }
         }
 
+        println!("# OUT_DIR is '{:?}'", env("OUT_DIR").expect("env var OUT_DIR is not set"));
+
+        // make our output dir
+        let mut out_dir = PathBuf::new();
+        out_dir.push(env("OUT_DIR").expect("env var OUT_DIR is not set"));
+        out_dir.push("conf_test");
+        DirBuilder::new().recursive(true).create(out_dir).expect("Failed to create output directory");
+
         let metadata = MetadataCommand::new()
+            .other_options(["--frozen".to_string()])
             .no_deps()
             .exec()
             .expect("Querying cargo metadata failed");
@@ -297,6 +307,7 @@ impl ConfTest {
         // let cargo start a rustc process that does not build the project but returns the
         // metadata about compilation artifacts
         let mut cargo = Command::new(env("CARGO").unwrap_or_else(|| OsString::from("cargo")))
+            .arg("--offline")
             .arg("rustc")
             .arg("--message-format")
             .arg("json")
