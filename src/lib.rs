@@ -170,17 +170,24 @@ impl ConfTest {
 
         println!(
             "# OUT_DIR is '{:?}'",
+        let mut outputs = Vec::new();
             env("OUT_DIR").expect("env var OUT_DIR is not set")
         );
 
         // make our output dir
         let mut out_dir = PathBuf::new();
-        out_dir.push(env("OUT_DIR").expect("env var OUT_DIR is not set"));
+        out_dir.push(env("OUT_DIR").unwrap());
         out_dir.push("conf_test");
         DirBuilder::new()
             .recursive(true)
             .create(out_dir)
             .expect("Failed to create output directory");
+
+        let mut logfile = PathBuf::new();
+        logfile.push(env("OUT_DIR").unwrap());
+        logfile.push("conf_test");
+        logfile.push("conf_test.log");
+        let mut logfile = File::create(logfile).expect("Failed to create logfile");
 
         let metadata = MetadataCommand::new()
             .other_options(["--frozen".to_string()])
@@ -203,12 +210,6 @@ impl ConfTest {
                 dependencies.insert(dep.name);
             }
         }
-        let edition = edition.unwrap_or_else(|| Edition::E2021);
-
-        let extern_libs = Self::get_extern_libs(&dependencies);
-
-        let mut test_features = Vec::new();
-        let mut outputs = Vec::new();
 
         if env("DOCS_RS").is_some() {
             outputs.push("# running on DOCS.RS\n".to_string());
@@ -216,6 +217,31 @@ impl ConfTest {
                 outputs.push("cargo:rustc-cfg=feature=\"docs_rs\"\n".to_string());
             }
         } else {
+            let edition = edition.unwrap_or_else(|| Edition::E2021);
+
+            let mut lockfile = PathBuf::new();
+            lockfile
+                .push(env("CARGO_MANIFEST_DIR").expect("env var CARGO_MANIFEST_DIR is not set"));
+            lockfile.push("Cargo.lock");
+            let lockfile_exists = lockfile.exists();
+
+            outputs.push(format!(
+                "# Lockfile '{:?}' present: {}\n",
+                lockfile, lockfile_exists
+            ));
+
+            let extern_libs = Self::get_extern_libs(&dependencies);
+
+            if !lockfile_exists {
+                outputs.push(format!(
+                    "# Delete Lockfile: '{:?}', {}\n",
+                    &lockfile,
+                    std::fs::remove_file(&lockfile).is_ok()
+                ));
+            }
+
+            let mut test_features = Vec::new();
+
             for feature in features {
                 if env(format!("CARGO_FEATURE_{}", feature.to_uppercase())).is_none() {
                     outputs.push(format!("# checking for {}\n", &feature));
@@ -257,13 +283,6 @@ impl ConfTest {
                 test_features.push(feature.clone());
             }
         }
-
-        let mut logfile = PathBuf::new();
-        logfile.push(env("OUT_DIR").unwrap());
-        logfile.push("conf_test");
-        logfile.push("conf_test.log");
-
-        let mut logfile = File::create(logfile).expect("Failed to create logfile");
 
         for output in outputs {
             logfile.write_all(output.as_bytes()).unwrap();
