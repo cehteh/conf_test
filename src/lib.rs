@@ -168,11 +168,12 @@ impl ConfTest {
             }
         }
 
-        println!(
-            "# OUT_DIR is '{:?}'",
         let mut outputs = Vec::new();
+
+        outputs.push(format!(
+            "# OUT_DIR is '{:?}'\n",
             env("OUT_DIR").expect("env var OUT_DIR is not set")
-        );
+        ));
 
         // make our output dir
         let mut out_dir = PathBuf::new();
